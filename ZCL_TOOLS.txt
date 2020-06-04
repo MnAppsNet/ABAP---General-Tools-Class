@@ -1,0 +1,1581 @@
+*&---------------------------------------------------------------------
+*&  Author  : Kalyvas Emmanouil
+*&  Created : 21/02/2020
+*&  Version : 1.2
+*&---------------------------------------------------------------------
+class ZCL_TOOLS definition
+  public
+  final
+  create public .
+
+public section.
+
+  types:
+    BEGIN OF ty_read_file_instructions,
+        field_name TYPE string,
+        read_from  TYPE i,
+        length     TYPE i,
+      END OF ty_read_file_instructions .
+  types:
+    ty_t_read_file_instructions TYPE STANDARD TABLE OF ty_read_file_instructions WITH KEY field_name .
+  types:
+    ty_raw(255)   TYPE x .
+  types:
+    ty_t_raw TYPE STANDARD TABLE OF ty_raw WITH DEFAULT KEY .
+  types:
+    ty_t_data TYPE STANDARD TABLE OF string WITH DEFAULT KEY .
+
+  constants TRUE type CHAR1 value 'X' ##NO_TEXT.
+  constants FALSE type CHAR1 value ' ' ##NO_TEXT.
+
+  class-methods SHOW_FILE_SELECTION
+    importing
+      !IM_LOCAL type CHAR1
+      !IM_FOLDER_DIALOG type CHAR1 default 'X'
+    returning
+      value(RT_FILE) type STRING .
+  class-methods CONVERT_RAW_TO_XSTRING
+    importing
+      !IM_RAW_TABLE type TABLE
+      !IM_FIELD_TO_READ type STRING optional
+    returning
+      value(RT_XSTRING) type XSTRING .
+  class-methods CONVERT_STRING_TO_XSTRING
+    importing
+      !IM_STRING_TABLE type TABLE
+      !IM_FIELD_TO_READ type STRING optional
+    returning
+      value(RT_XSTRING) type XSTRING .
+  class-methods CONVERT_XSTRING_TO_BINARY
+    importing
+      !IM_XSTRING type XSTRING
+    returning
+      value(RT_RAW_TABLE) type TY_T_RAW .
+  class-methods CONVERT_XSTRING_TO_STRING
+    importing
+      !IM_XSTRING type XSTRING
+    returning
+      value(RT_DATA) type TY_T_DATA .
+  class-methods CHANGE_DATE_FORMAT
+    importing
+      !IM_FORMAT_FROM type CHAR10 default 'YYYYMMDD'
+      !IM_FORMAT_TO type CHAR10 default 'DDMMYYYY'
+      !IM_DATE type CHAR10
+    returning
+      value(RT_DATE) type CHAR10 .
+  class-methods CHANGE_TIME_FORMAT
+    importing
+      !IM_FORMAT_FROM type CHAR8 default 'HHMMSS'
+      !IM_FORMAT_TO type CHAR8 default 'HH:MM:SS'
+      !IM_TIME type CHAR8
+    returning
+      value(RT_TIME) type CHAR8 .
+  class-methods READ_FILE_IN_TABLE
+    importing
+      !IM_INSTRUCTIONS_TABLE type TY_T_READ_FILE_INSTRUCTIONS optional
+      !IM_FILE_PATH type STRING
+      !IM_LOCAL type CHAR1 default 'D'
+    changing
+      !CH_TABLE type TABLE
+    exceptions
+      WRONG_INSTRACTIONS
+      WRONG_FIELD_NAME
+      CAN_NOT_READ_FILE .
+  class-methods READ_FILE_IN_XSTRING
+    importing
+      !IM_FILE_PATH type STRING
+      !IM_LOCAL type CHAR1 default 'D'
+    returning
+      value(RT_XSTRING) type XSTRING
+    exceptions
+      CAN_NOT_READ_FILE .
+  class-methods MOVE_FILE_2
+    importing
+      !IM_ORIGINAL_PATH type STRING
+      !IM_MOVE_PATH type STRING
+      !IM_ORIGINAL_PATH_LOCAL type CHAR1 default 'D'
+      !IM_MOVE_PATH_LOCAL type CHAR1 default 'D'
+      !IM_DELETE_ORIGINAL type CHAR1 default 'X'
+    exceptions
+      CAN_NOT_WRITE_MOVE_FILE
+      CAN_NOT_READ_ORIFINAL_FILE
+      CAN_NOT_DELETE_ORIGINAL_FILE .
+  class-methods MOVE_FILE
+    importing
+      !IM_ORIGINAL_PATH type STRING
+      !IM_MOVE_PATH type STRING
+      !IM_ORIGINAL_PATH_LOCAL type CHAR1 default 'D'
+      !IM_MOVE_PATH_LOCAL type CHAR1 default 'D'
+      !IM_DELETE_ORIGINAL type CHAR1 default 'X'
+    exceptions
+      CAN_NOT_WRITE_MOVE_FILE
+      CAN_NOT_READ_ORIFINAL_FILE
+      CAN_NOT_DELETE_ORIGINAL_FILE .
+  class-methods WRITE_FILE
+    importing
+      !IM_FILE_PATH type STRING
+      !IM_LOCAL type CHAR1 default 'D'
+      !IM_TABLE type TY_T_DATA
+    exceptions
+      CAN_NOT_WRITE_FILE .
+  class-methods WRITE_FILE_FROM_XSTRING
+    importing
+      !IM_FILE_PATH type STRING
+      !IM_LOCAL type CHAR1 default 'D'
+      !IM_XSTRING type XSTRING
+    exceptions
+      CAN_NOT_WRITE_FILE .
+  class-methods GET_FILE_NAME_FROM_PATH
+    importing
+      !IM_PATH type STRING
+      !IM_APPEND_IN_NAME type STRING optional
+    returning
+      value(RT_FILENAME) type STRING .
+  class-methods GET_PATH_LOCATION
+    importing
+      !IM_PATH type STRING
+    returning
+      value(RT_FLAG) type CHAR1 .
+  class-methods CSV
+    returning
+      value(RT_CSV) type ref to ZCL_TOOLS_CSV .
+  class-methods GET_FILE_LIST_OF_FOLDER
+    importing
+      !IM_PATH type STRING
+      !IM_LOCAL type CHAR1 default 'D'
+    returning
+      value(RT_FILELIST) type TY_T_DATA
+    exceptions
+      CAN_NOT_READ_FOLDER .
+  class-methods CONDENSE_TABLE_FIELDS
+    importing
+      !IM_TABLE type TABLE
+      !IM_SEPERATOR type CHAR1 default ''
+      !IM_RESPECT_BLANKS type FLAG default TRUE
+    returning
+      value(RT_TABLE) type TY_T_DATA .
+  class-methods GET_RANGE_FROM_SET
+    importing
+      !IM_SET_NAME type C
+    changing
+      !CH_RANGE type TABLE
+    exceptions
+      SET_NOT_FOUND
+      FAILED_TO_UPDATE_TABLE_GIVEN .
+  class-methods LOAD_ZIP
+    importing
+      !IM_PATH type STRING
+      !IM_LOCAL type FLAG default 'D'
+    returning
+      value(RT_ZIP) type ref to CL_ABAP_ZIP .
+  class-methods CONVERT_CSV_TO_TABLE
+    importing
+      !IM_CSV type TY_T_DATA
+    changing
+      !CH_TABLE type ref to DATA .
+  class-methods CLEAR_DIRECTORY
+    importing
+      !IM_PATH type STRING .
+  class-methods GET_XML_NODE
+    importing
+      !IM_NODE type STRING
+      !IM_XML_STRING type STRING
+    returning
+      value(RT_SUBNODES) type TY_T_DATA .
+  class-methods LOG
+    returning
+      value(RT_LOG) type ref to ZCL_TOOLS_LOG .
+  class-methods POPUP_TO_SELECT
+    importing
+      !IM_ITEMS type TY_T_DATA
+    returning
+      value(RT_SELECTION) type I .
+  class-methods SELECT_FILE_FROM_PATH
+    importing
+      !IM_PATH type STRING
+      !IM_LOCAL type CHAR1 default 'D'
+      !IM_PATTERN type STRING default '*'
+    returning
+      value(RT_PATH) type STRING .
+  class-methods CONDENSE_STRUCT_TO_STRING
+    importing
+      !IM_STRUCT type ANY
+      !IM_SEPERATOR type CHAR1 default ';'
+      !IM_RESPECT_BLANKS type FLAG default TRUE
+    returning
+      value(RT_STRING) type STRING .
+  PROTECTED SECTION.
+private section.
+
+  class-data LO_CSV type ref to ZCL_TOOLS_CSV .
+  class-data LO_LOG type ref to ZCL_TOOLS_LOG .
+ENDCLASS.
+
+
+
+CLASS ZCL_TOOLS IMPLEMENTATION.
+
+
+* <SIGNATURE>---------------------------------------------------------------------------------------+
+* | Static Public Method ZCL_TOOLS=>CHANGE_DATE_FORMAT
+* +-------------------------------------------------------------------------------------------------+
+* | [--->] IM_FORMAT_FROM                 TYPE        CHAR10 (default ='YYYYMMDD')
+* | [--->] IM_FORMAT_TO                   TYPE        CHAR10 (default ='DDMMYYYY')
+* | [--->] IM_DATE                        TYPE        CHAR10
+* | [<-()] RT_DATE                        TYPE        CHAR10
+* +--------------------------------------------------------------------------------------</SIGNATURE>
+  METHOD change_date_format.
+    "Create a table with all the date format strings :
+    TYPES: BEGIN OF ty_string_formats,
+             line TYPE string,
+           END OF ty_string_formats.
+    DATA lt_string_formats TYPE STANDARD TABLE OF ty_string_formats.
+    lt_string_formats = VALUE #(
+      ( line = 'YYYY' )
+      ( line = 'MM' )
+      ( line = 'DD' )
+    ).
+
+    rt_date = im_format_to.
+    "Convert the date :
+    LOOP AT lt_string_formats INTO DATA(ls_string_format).
+      CHECK im_format_from CS ls_string_format-line.
+      CHECK im_format_to CS ls_string_format-line.
+
+      FIND FIRST OCCURRENCE OF ls_string_format-line IN im_format_from RESULTS DATA(ls_results_from).
+      IF sy-subrc = 0.
+        FIND FIRST OCCURRENCE OF ls_string_format-line IN im_format_to RESULTS DATA(ls_results_to).
+        IF sy-subrc = 0.
+          rt_date+ls_results_to-offset(ls_results_to-length) = im_date+ls_results_from-offset(ls_results_from-length).
+        ENDIF.
+      ENDIF.
+    ENDLOOP.
+  ENDMETHOD.
+
+
+* <SIGNATURE>---------------------------------------------------------------------------------------+
+* | Static Public Method ZCL_TOOLS=>CHANGE_TIME_FORMAT
+* +-------------------------------------------------------------------------------------------------+
+* | [--->] IM_FORMAT_FROM                 TYPE        CHAR8 (default ='HHMMSS')
+* | [--->] IM_FORMAT_TO                   TYPE        CHAR8 (default ='HH:MM:SS')
+* | [--->] IM_TIME                        TYPE        CHAR8
+* | [<-()] RT_TIME                        TYPE        CHAR8
+* +--------------------------------------------------------------------------------------</SIGNATURE>
+  METHOD change_time_format.
+    "Create a table with all the date format strings :
+    TYPES: BEGIN OF ty_string_formats,
+             line TYPE string,
+           END OF ty_string_formats.
+    DATA lt_string_formats TYPE STANDARD TABLE OF ty_string_formats.
+    lt_string_formats = VALUE #(
+      ( line = 'HH' )
+      ( line = 'MM' )
+      ( line = 'SS' )
+    ).
+
+    rt_time = im_format_to.
+    "Convert the date :
+    LOOP AT lt_string_formats INTO DATA(ls_string_format).
+      CHECK im_format_from CS ls_string_format-line.
+      CHECK im_format_to CS ls_string_format-line.
+
+      FIND FIRST OCCURRENCE OF ls_string_format-line IN im_format_from RESULTS DATA(ls_results_from).
+      IF sy-subrc = 0.
+        FIND FIRST OCCURRENCE OF ls_string_format-line IN im_format_to RESULTS DATA(ls_results_to).
+        IF sy-subrc = 0.
+          rt_time+ls_results_to-offset(ls_results_to-length) = im_time+ls_results_from-offset(ls_results_from-length).
+        ENDIF.
+      ENDIF.
+    ENDLOOP.
+  ENDMETHOD.
+
+
+* <SIGNATURE>---------------------------------------------------------------------------------------+
+* | Static Public Method ZCL_TOOLS=>CLEAR_DIRECTORY
+* +-------------------------------------------------------------------------------------------------+
+* | [--->] IM_PATH                        TYPE        STRING
+* +--------------------------------------------------------------------------------------</SIGNATURE>
+  METHOD clear_directory.
+
+    DATA: lt_list     TYPE STANDARD TABLE OF  epsfili,
+          lv_length   TYPE i,
+          lv_lastpath TYPE epsf-epsdirnam.
+
+    lv_length = strlen( im_path ).
+    IF im_path(lv_length) NE '/'.
+      lv_lastpath = im_path && '/'.
+    ELSE.
+      lv_lastpath = im_path.
+    ENDIF.
+
+    CALL FUNCTION 'EPS_GET_DIRECTORY_LISTING_TEST'
+      EXPORTING
+        dir_name = lv_lastpath
+      TABLES
+        dir_list = lt_list.
+    IF sy-subrc <> 0.
+      MESSAGE ID sy-msgid TYPE sy-msgty NUMBER sy-msgno
+        WITH sy-msgv1 sy-msgv2 sy-msgv3 sy-msgv4.
+    ENDIF.
+
+    LOOP AT lt_list INTO DATA(wa_list).
+      DATA(lv_file) = lv_lastpath && wa_list-name.
+      DELETE DATASET lv_file.
+    ENDLOOP.
+
+
+  ENDMETHOD.
+
+
+* <SIGNATURE>---------------------------------------------------------------------------------------+
+* | Static Public Method ZCL_TOOLS=>CONDENSE_STRUCT_TO_STRING
+* +-------------------------------------------------------------------------------------------------+
+* | [--->] IM_STRUCT                      TYPE        ANY
+* | [--->] IM_SEPERATOR                   TYPE        CHAR1 (default =';')
+* | [--->] IM_RESPECT_BLANKS              TYPE        FLAG (default =TRUE)
+* | [<-()] RT_STRING                      TYPE        STRING
+* +--------------------------------------------------------------------------------------</SIGNATURE>
+  METHOD condense_struct_to_string.
+    CLEAR rt_string.
+    ASSIGN im_struct TO FIELD-SYMBOL(<fs_struct>).
+    IF <fs_struct> IS ASSIGNED.
+      DO.
+        ASSIGN COMPONENT sy-index OF STRUCTURE <fs_struct> TO FIELD-SYMBOL(<fs_field>).
+        IF sy-subrc = 0.
+          IF <fs_field> IS ASSIGNED.
+            DATA(lv_data) = CONV string( <fs_struct> ).
+            IF im_seperator IS NOT INITIAL.
+              IF im_respect_blanks = true.
+                CONCATENATE rt_string lv_data INTO rt_string RESPECTING BLANKS SEPARATED BY im_seperator.
+              ELSE.
+                CONCATENATE rt_string lv_data INTO rt_string SEPARATED BY im_seperator.
+              ENDIF.
+            ELSE.
+              IF im_respect_blanks = true.
+                CONCATENATE rt_string lv_data INTO rt_string RESPECTING BLANKS.
+              ELSE.
+                CONCATENATE rt_string lv_data INTO rt_string.
+              ENDIF.
+            ENDIF.
+          ENDIF.
+        ELSE.
+          EXIT.
+        ENDIF.
+      ENDDO.
+    ENDIF.
+
+  ENDMETHOD.
+
+
+* <SIGNATURE>---------------------------------------------------------------------------------------+
+* | Static Public Method ZCL_TOOLS=>CONDENSE_TABLE_FIELDS
+* +-------------------------------------------------------------------------------------------------+
+* | [--->] IM_TABLE                       TYPE        TABLE
+* | [--->] IM_SEPERATOR                   TYPE        CHAR1 (default ='')
+* | [--->] IM_RESPECT_BLANKS              TYPE        FLAG (default =TRUE)
+* | [<-()] RT_TABLE                       TYPE        TY_T_DATA
+* +--------------------------------------------------------------------------------------</SIGNATURE>
+  METHOD condense_table_fields.
+    DATA ls_line TYPE LINE OF ty_t_data.
+    LOOP AT im_table ASSIGNING FIELD-SYMBOL(<fs_struct>).
+      DO.
+        ASSIGN COMPONENT sy-index OF STRUCTURE <fs_struct> TO FIELD-SYMBOL(<fs_field>).
+        IF sy-subrc <> 0.
+          EXIT.
+        ENDIF.
+        IF im_seperator IS NOT INITIAL.
+          IF im_respect_blanks = true.
+            CONCATENATE ls_line <fs_field> INTO ls_line RESPECTING BLANKS SEPARATED BY im_seperator.
+          ELSE.
+            CONCATENATE ls_line <fs_field> INTO ls_line SEPARATED BY im_seperator.
+          ENDIF.
+        ELSE.
+          IF im_respect_blanks = true.
+            CONCATENATE ls_line <fs_field> INTO ls_line RESPECTING BLANKS.
+          ELSE.
+            CONCATENATE ls_line <fs_field> INTO ls_line.
+          ENDIF.
+        ENDIF.
+      ENDDO.
+      APPEND ls_line TO rt_table.
+      CLEAR ls_line.
+    ENDLOOP.
+  ENDMETHOD.
+
+
+* <SIGNATURE>---------------------------------------------------------------------------------------+
+* | Static Public Method ZCL_TOOLS=>CONVERT_CSV_TO_TABLE
+* +-------------------------------------------------------------------------------------------------+
+* | [--->] IM_CSV                         TYPE        TY_T_DATA
+* | [<-->] CH_TABLE                       TYPE REF TO DATA
+* +--------------------------------------------------------------------------------------</SIGNATURE>
+  METHOD convert_csv_to_table.
+    DATA : lo_struct TYPE REF TO cl_abap_structdescr,
+           lo_table  TYPE REF TO cl_abap_tabledescr,
+           ls_comp   TYPE cl_abap_structdescr=>component,
+           lt_comp   TYPE cl_abap_structdescr=>component_table,
+           lt_fields TYPE STANDARD TABLE OF string,
+           ls_table  TYPE REF TO data
+           .
+    FIELD-SYMBOLS : <fs_struct> TYPE any,
+                    <fs_table>  TYPE table.
+
+*Create dynamic table :
+    LOOP AT im_csv INTO DATA(ls_csv).
+      REFRESH lt_fields.
+      SPLIT ls_csv AT ZCL_TOOLS=>csv( )->lv_seperator INTO TABLE lt_fields.
+      LOOP AT lt_fields INTO DATA(ls_fields).
+        ls_comp-name = 'FIELD' && sy-tabix.
+        ls_comp-type ?= cl_abap_elemdescr=>describe_by_name( 'STRING' ).
+        APPEND ls_comp TO lt_comp.
+      ENDLOOP.
+      EXIT.
+    ENDLOOP.
+    IF lt_comp IS NOT INITIAL.
+      TRY.
+          lo_struct = cl_abap_structdescr=>create( p_components = lt_comp ).
+          lo_table = cl_abap_tabledescr=>create( lo_struct ).
+          CREATE DATA ch_table TYPE HANDLE lo_table.
+          CREATE DATA ls_table TYPE HANDLE lo_struct.
+          ASSIGN ls_table->* TO <fs_struct>.
+          ASSIGN ch_table->* TO <fs_table>.
+*Fill table :
+          LOOP AT im_csv INTO ls_csv.
+            REFRESH lt_fields.
+            SPLIT ls_csv AT ZCL_TOOLS=>csv( )->lv_seperator INTO TABLE lt_fields.
+            LOOP AT lt_fields INTO ls_fields.
+              ASSIGN COMPONENT sy-tabix OF STRUCTURE <fs_struct> TO FIELD-SYMBOL(<fs_field>).
+              IF sy-subrc = 0.
+                <fs_field> = ls_fields.
+              ENDIF.
+            ENDLOOP.
+            APPEND <fs_struct> TO <fs_table>.
+            CLEAR <fs_struct>.
+          ENDLOOP.
+        CATCH cx_root.
+          CLEAR ch_table.
+      ENDTRY.
+    ENDIF.
+  ENDMETHOD.
+
+
+* <SIGNATURE>---------------------------------------------------------------------------------------+
+* | Static Public Method ZCL_TOOLS=>CONVERT_RAW_TO_XSTRING
+* +-------------------------------------------------------------------------------------------------+
+* | [--->] IM_RAW_TABLE                   TYPE        TABLE
+* | [--->] IM_FIELD_TO_READ               TYPE        STRING(optional)
+* | [<-()] RT_XSTRING                     TYPE        XSTRING
+* +--------------------------------------------------------------------------------------</SIGNATURE>
+  METHOD convert_raw_to_xstring.
+    CLEAR rt_xstring.
+    LOOP AT im_raw_table ASSIGNING FIELD-SYMBOL(<fs_raw_table>).
+      IF im_field_to_read IS NOT INITIAL.
+        DATA(lv_fieldname) = im_field_to_read.
+        TRANSLATE lv_fieldname TO UPPER CASE.
+        ASSIGN COMPONENT lv_fieldname OF STRUCTURE <fs_raw_table> TO FIELD-SYMBOL(<fs_raw_data>).
+        CONCATENATE rt_xstring <fs_raw_data> INTO rt_xstring IN BYTE MODE.
+        CLEAR lv_fieldname.
+      ELSE.
+        CONCATENATE rt_xstring <fs_raw_table> INTO rt_xstring IN BYTE MODE.
+      ENDIF.
+    ENDLOOP.
+  ENDMETHOD.
+
+
+* <SIGNATURE>---------------------------------------------------------------------------------------+
+* | Static Public Method ZCL_TOOLS=>CONVERT_STRING_TO_XSTRING
+* +-------------------------------------------------------------------------------------------------+
+* | [--->] IM_STRING_TABLE                TYPE        TABLE
+* | [--->] IM_FIELD_TO_READ               TYPE        STRING(optional)
+* | [<-()] RT_XSTRING                     TYPE        XSTRING
+* +--------------------------------------------------------------------------------------</SIGNATURE>
+  METHOD convert_string_to_xstring.
+    DATA lv_temp_xstring TYPE xstring.
+    FIELD-SYMBOLS <fs_data> TYPE any.
+    LOOP AT im_string_table ASSIGNING FIELD-SYMBOL(<fs_string_table>).
+      IF im_field_to_read IS NOT INITIAL.
+        DATA(lv_fieldname) = im_field_to_read.
+        TRANSLATE lv_fieldname TO UPPER CASE.
+        ASSIGN COMPONENT lv_fieldname OF STRUCTURE <fs_string_table> TO <fs_data>.
+      ELSE.
+        ASSIGN <fs_string_table> TO <fs_data>.
+      ENDIF.
+      CALL FUNCTION 'SCMS_STRING_TO_XSTRING'
+        EXPORTING
+          text   = <fs_data>
+*         MIMETYPE       = ' '
+*         ENCODING       =
+        IMPORTING
+          buffer = lv_temp_xstring
+        EXCEPTIONS
+          failed = 1
+          OTHERS = 2.
+      IF sy-subrc = 0.
+        CONCATENATE rt_xstring lv_temp_xstring INTO rt_xstring IN BYTE MODE.
+      ENDIF.
+    ENDLOOP.
+  ENDMETHOD.
+
+
+* <SIGNATURE>---------------------------------------------------------------------------------------+
+* | Static Public Method ZCL_TOOLS=>CONVERT_XSTRING_TO_BINARY
+* +-------------------------------------------------------------------------------------------------+
+* | [--->] IM_XSTRING                     TYPE        XSTRING
+* | [<-()] RT_RAW_TABLE                   TYPE        TY_T_RAW
+* +--------------------------------------------------------------------------------------</SIGNATURE>
+  METHOD convert_xstring_to_binary.
+    REFRESH rt_raw_table.
+    CALL FUNCTION 'SCMS_XSTRING_TO_BINARY'
+      EXPORTING
+        buffer     = im_xstring
+      TABLES
+        binary_tab = rt_raw_table.
+  ENDMETHOD.
+
+
+* <SIGNATURE>---------------------------------------------------------------------------------------+
+* | Static Public Method ZCL_TOOLS=>CONVERT_XSTRING_TO_STRING
+* +-------------------------------------------------------------------------------------------------+
+* | [--->] IM_XSTRING                     TYPE        XSTRING
+* | [<-()] RT_DATA                        TYPE        TY_T_DATA
+* +--------------------------------------------------------------------------------------</SIGNATURE>
+  METHOD convert_xstring_to_string.
+    DATA : va_line TYPE string,
+           va_splitter TYPE x.
+
+    va_splitter = '0A'.
+
+    SPLIT im_xstring AT va_splitter INTO TABLE DATA(lt_data) IN BYTE MODE.
+
+    LOOP AT lt_data INTO DATA(ls_data).
+      CALL METHOD cl_abap_conv_in_ce=>create
+        EXPORTING
+          encoding = 'UTF-8'
+          input    = ls_data
+        RECEIVING
+          conv     = DATA(convin).
+      CALL METHOD convin->read
+        IMPORTING
+          data = va_line.
+      APPEND va_line TO rt_data.
+      CLEAR convin.
+    ENDLOOP.
+
+  ENDMETHOD.
+
+
+* <SIGNATURE>---------------------------------------------------------------------------------------+
+* | Static Public Method ZCL_TOOLS=>CSV
+* +-------------------------------------------------------------------------------------------------+
+* | [<-()] RT_CSV                         TYPE REF TO ZCL_TOOLS_CSV
+* +--------------------------------------------------------------------------------------</SIGNATURE>
+  METHOD csv.
+    IF lo_csv IS INITIAL.
+      CREATE OBJECT lo_csv.
+    ENDIF.
+    rt_csv = lo_csv.
+  ENDMETHOD.
+
+
+* <SIGNATURE>---------------------------------------------------------------------------------------+
+* | Static Public Method ZCL_TOOLS=>GET_FILE_LIST_OF_FOLDER
+* +-------------------------------------------------------------------------------------------------+
+* | [--->] IM_PATH                        TYPE        STRING
+* | [--->] IM_LOCAL                       TYPE        CHAR1 (default ='D')
+* | [<-()] RT_FILELIST                    TYPE        TY_T_DATA
+* | [EXC!] CAN_NOT_READ_FOLDER
+* +--------------------------------------------------------------------------------------</SIGNATURE>
+  METHOD get_file_list_of_folder.
+
+    DATA : lv_local        TYPE char1,
+           lv_path         TYPE string,
+           lt_server_files TYPE STANDARD TABLE OF eps2fili,
+           lt_local_files  TYPE STANDARD TABLE OF file_info.
+
+    IF im_local = 'D'.
+      lv_local = ZCL_TOOLS=>get_path_location( im_path ).
+      IF lv_local = 'L'.
+        lv_local = 'X'.
+      ELSEIF lv_local = 'S'.
+        CLEAR lv_local.
+      ENDIF.
+    ELSE.
+      lv_local = im_local.
+    ENDIF.
+
+    lv_path = im_path.
+    IF ( NOT im_path CP '*\' ) AND lv_local = 'X'.
+      lv_path = lv_path && '\'.
+    ELSEIF ( NOT im_path CP '*/' ) AND lv_local IS INITIAL.
+      lv_path = lv_path && '/'.
+    ENDIF.
+
+    IF lv_local IS NOT INITIAL.
+      DATA(lv_file_count) = 0.
+      CALL METHOD cl_gui_frontend_services=>directory_list_files
+        EXPORTING
+          directory                   = im_path
+*         filter                      = ' '
+          files_only                  = 'X'
+*         directories_only            =
+        CHANGING
+          file_table                  = lt_local_files
+          count                       = lv_file_count
+        EXCEPTIONS
+          cntl_error                  = 1
+          directory_list_files_failed = 2
+          wrong_parameter             = 3
+          error_no_gui                = 4
+          not_supported_by_gui        = 5
+          OTHERS                      = 6.
+      IF sy-subrc <> 0.
+        RAISE can_not_read_folder.
+      ENDIF.
+
+    ELSE.
+
+      CALL FUNCTION 'EPS2_GET_DIRECTORY_LISTING'
+        EXPORTING
+          iv_dir_name            = CONV eps2filnam( im_path )
+*         FILE_MASK              = ' '
+        TABLES
+          dir_list               = lt_server_files
+        EXCEPTIONS
+          invalid_eps_subdir     = 1
+          sapgparam_failed       = 2
+          build_directory_failed = 3
+          no_authorization       = 4
+          read_directory_failed  = 5
+          too_many_read_errors   = 6
+          empty_directory_list   = 7
+          OTHERS                 = 8.
+      IF sy-subrc <> 0.
+        RAISE can_not_read_folder.
+      ENDIF.
+
+    ENDIF.
+
+    IF lt_local_files IS NOT INITIAL.
+      DELETE lt_local_files WHERE isdir = 1.
+      LOOP AT lt_local_files INTO DATA(ls_local_files).
+        APPEND lv_path && ls_local_files-filename TO rt_filelist.
+      ENDLOOP.
+    ELSEIF lt_server_files IS NOT INITIAL.
+      LOOP AT lt_server_files INTO DATA(ls_server_files).
+        APPEND lv_path && ls_server_files-name TO rt_filelist.
+      ENDLOOP.
+    ENDIF.
+
+  ENDMETHOD.
+
+
+* <SIGNATURE>---------------------------------------------------------------------------------------+
+* | Static Public Method ZCL_TOOLS=>GET_FILE_NAME_FROM_PATH
+* +-------------------------------------------------------------------------------------------------+
+* | [--->] IM_PATH                        TYPE        STRING
+* | [--->] IM_APPEND_IN_NAME              TYPE        STRING(optional)
+* | [<-()] RT_FILENAME                    TYPE        STRING
+* +--------------------------------------------------------------------------------------</SIGNATURE>
+  METHOD get_file_name_from_path.
+
+    DATA lt_parts TYPE STANDARD TABLE OF string.
+    IF im_path CS '/'.  "Server file
+      SPLIT im_path AT '/' INTO TABLE lt_parts.
+    ELSEIF im_path CS '\'. "Local File
+      SPLIT im_path AT '\' INTO TABLE lt_parts.
+    ELSE.
+      CLEAR rt_filename. "Return nothing, no filename found in path
+    ENDIF.
+
+    IF lines( lt_parts ) > 1.
+      rt_filename = lt_parts[ lines( lt_parts ) ].
+      IF im_append_in_name IS NOT INITIAL.
+        REFRESH lt_parts.
+        IF rt_filename CS '.'.
+          SPLIT rt_filename AT '.' INTO TABLE lt_parts.
+          CLEAR rt_filename.
+          LOOP AT lt_parts INTO DATA(ls_parts).
+            IF sy-tabix = lines( lt_parts ) - 1.
+              rt_filename = ls_parts && im_append_in_name && '.' && lt_parts[ lines( lt_parts ) ].
+              EXIT.
+            ENDIF.
+            rt_filename = rt_filename && '.' && ls_parts.
+          ENDLOOP.
+        ENDIF.
+      ENDIF.
+    ENDIF.
+
+  ENDMETHOD.
+
+
+* <SIGNATURE>---------------------------------------------------------------------------------------+
+* | Static Public Method ZCL_TOOLS=>GET_PATH_LOCATION
+* +-------------------------------------------------------------------------------------------------+
+* | [--->] IM_PATH                        TYPE        STRING
+* | [<-()] RT_FLAG                        TYPE        CHAR1
+* +--------------------------------------------------------------------------------------</SIGNATURE>
+  METHOD get_path_location.
+    IF im_path CS '/'. "Server
+      rt_flag = 'S'.
+    ELSEIF im_path CS '\'. "Local PC
+      rt_flag = 'L'.
+    ELSE. "Uknown
+      rt_flag = ''.
+    ENDIF.
+  ENDMETHOD.
+
+
+* <SIGNATURE>---------------------------------------------------------------------------------------+
+* | Static Public Method ZCL_TOOLS=>GET_RANGE_FROM_SET
+* +-------------------------------------------------------------------------------------------------+
+* | [--->] IM_SET_NAME                    TYPE        C
+* | [<-->] CH_RANGE                       TYPE        TABLE
+* | [EXC!] SET_NOT_FOUND
+* | [EXC!] FAILED_TO_UPDATE_TABLE_GIVEN
+* +--------------------------------------------------------------------------------------</SIGNATURE>
+  METHOD get_range_from_set.
+
+    DATA : lv_setid      TYPE sethier-setid,
+           ls_line       TYPE REF TO data,
+           lt_set_values TYPE STANDARD TABLE OF rgsb4
+           .
+    FIELD-SYMBOLS : <fs_field>  TYPE any,
+                    <fs_struct> TYPE any
+                    .
+
+    CALL FUNCTION 'G_SET_GET_ID_FROM_NAME'
+      EXPORTING
+        shortname                = im_set_name
+      IMPORTING
+        new_setid                = lv_setid
+      EXCEPTIONS
+        no_set_found             = 1
+        no_set_picked_from_popup = 2
+        wrong_class              = 3
+        wrong_subclass           = 4
+        table_field_not_found    = 5
+        fields_dont_match        = 6
+        set_is_empty             = 7
+        formula_in_set           = 8
+        set_is_dynamic           = 9
+        OTHERS                   = 10.
+    IF sy-subrc <> 0.
+      RAISE set_not_found.
+    ENDIF.
+
+    "take values from set ZFI_REOCO_DOCTYPE accordind to set's id
+    CALL FUNCTION 'G_SET_GET_ALL_VALUES'
+      EXPORTING
+        setnr      = lv_setid
+      TABLES
+        set_values = lt_set_values.
+    IF sy-subrc <> 0.
+      RAISE set_not_found.
+    ENDIF.
+
+    CREATE DATA ls_line LIKE LINE OF ch_range.
+    ASSIGN ls_line->* TO <fs_struct>.
+    LOOP AT lt_set_values INTO DATA(ls_set_value).
+
+      ASSIGN COMPONENT 'SIGN' OF STRUCTURE <fs_struct> TO <fs_field>.
+      IF sy-subrc <> 0.
+        RAISE failed_to_update_table_given.
+      ENDIF.
+      <fs_field> = 'I'.
+      IF ls_set_value-from = ls_set_value-to OR ls_set_value-to IS INITIAL. "If only a low values is given :
+
+        ASSIGN COMPONENT 'OPTION' OF STRUCTURE <fs_struct> TO <fs_field>.
+        IF sy-subrc <> 0.
+          RAISE failed_to_update_table_given.
+        ENDIF.
+        <fs_field> = 'EQ'.
+        ASSIGN COMPONENT 'LOW' OF STRUCTURE <fs_struct> TO <fs_field>.
+        IF sy-subrc <> 0.
+          RAISE failed_to_update_table_given.
+        ENDIF.
+        <fs_field> = ls_set_value-from.
+
+      ELSE. "If we have a range from low to high :
+
+        ASSIGN COMPONENT 'OPTION' OF STRUCTURE <fs_struct> TO <fs_field>.
+        IF sy-subrc <> 0.
+          RAISE failed_to_update_table_given.
+        ENDIF.
+        <fs_field> = 'BT'.
+        ASSIGN COMPONENT 'LOW' OF STRUCTURE <fs_struct> TO <fs_field>.
+        IF sy-subrc <> 0.
+          RAISE failed_to_update_table_given.
+        ENDIF.
+        <fs_field> = ls_set_value-from.
+        ASSIGN COMPONENT 'TO' OF STRUCTURE <fs_struct> TO <fs_field>.
+        IF sy-subrc <> 0.
+          RAISE failed_to_update_table_given.
+        ENDIF.
+        <fs_field> = ls_set_value-from.
+
+      ENDIF.
+
+      APPEND <fs_struct> TO ch_range.
+      IF sy-subrc <> 0.
+        RAISE failed_to_update_table_given.
+      ENDIF.
+
+    ENDLOOP.
+
+
+
+
+  ENDMETHOD.
+
+
+* <SIGNATURE>---------------------------------------------------------------------------------------+
+* | Static Public Method ZCL_TOOLS=>GET_XML_NODE
+* +-------------------------------------------------------------------------------------------------+
+* | [--->] IM_NODE                        TYPE        STRING
+* | [--->] IM_XML_STRING                  TYPE        STRING
+* | [<-()] RT_SUBNODES                    TYPE        TY_T_DATA
+* +--------------------------------------------------------------------------------------</SIGNATURE>
+  METHOD get_xml_node.
+
+    DATA : lv_regex   TYPE string VALUE '<.*>.*<\/.*>',
+           lv_index   TYPE i VALUE -1,
+           lo_reg     TYPE REF TO cl_abap_regex,
+           lt_results TYPE match_result_tab,
+           lv_string  TYPE string.
+
+    "Prepare for index or node name search :
+    IF im_node CO '1234567890'. "Index search
+      lv_index = im_node.
+    ELSE. "Node search
+      lv_regex = '<' && im_node && '.*>.*<\/' && im_node && '>'.
+    ENDIF.
+
+    "Remove new lines :
+    lv_string = im_xml_string.
+    REPLACE ALL OCCURRENCES OF cl_abap_char_utilities=>newline IN lv_string WITH SPACE.
+    "Create matcher object and get matches :
+    CREATE OBJECT lo_reg EXPORTING pattern = lv_regex.
+    DATA(lo_matcher) = lo_reg->create_matcher( text = lv_string ).
+    lt_results = lo_matcher->find_all( ).
+
+    "Get results :
+    LOOP AT lt_results INTO DATA(ls_results).
+      IF lv_index > -1.
+        IF lv_index = 0.
+          EXIT.
+        ENDIF.
+        lv_index = lv_index - 1.
+      ENDIF.
+      APPEND im_xml_string+ls_results-offset(ls_results-length) TO rt_subnodes.
+    ENDLOOP.
+
+  ENDMETHOD.
+
+
+* <SIGNATURE>---------------------------------------------------------------------------------------+
+* | Static Public Method ZCL_TOOLS=>LOAD_ZIP
+* +-------------------------------------------------------------------------------------------------+
+* | [--->] IM_PATH                        TYPE        STRING
+* | [--->] IM_LOCAL                       TYPE        FLAG (default ='D')
+* | [<-()] RT_ZIP                         TYPE REF TO CL_ABAP_ZIP
+* +--------------------------------------------------------------------------------------</SIGNATURE>
+  METHOD load_zip.
+    CLEAR rt_zip.
+    CREATE OBJECT rt_zip.
+    ZCL_TOOLS=>read_file_in_xstring(
+      EXPORTING
+       im_file_path = im_path
+       im_local = im_local
+      RECEIVING
+        rt_xstring = DATA(lv_zip)
+      EXCEPTIONS
+        can_not_read_file = 1
+        OTHERS = 2
+     ).
+    IF sy-subrc = 0.
+      TRY.
+          rt_zip->load( lv_zip ).
+        CATCH cx_root.
+          CLEAR rt_zip.
+      ENDTRY.
+    ENDIF.
+  ENDMETHOD.
+
+
+* <SIGNATURE>---------------------------------------------------------------------------------------+
+* | Static Public Method ZCL_TOOLS=>LOG
+* +-------------------------------------------------------------------------------------------------+
+* | [<-()] RT_LOG                         TYPE REF TO ZCL_TOOLS_LOG
+* +--------------------------------------------------------------------------------------</SIGNATURE>
+  METHOD log.
+    IF lo_log IS INITIAL.
+      CREATE OBJECT lo_log.
+    ENDIF.
+    rt_log = lo_log.
+  ENDMETHOD.
+
+
+* <SIGNATURE>---------------------------------------------------------------------------------------+
+* | Static Public Method ZCL_TOOLS=>MOVE_FILE
+* +-------------------------------------------------------------------------------------------------+
+* | [--->] IM_ORIGINAL_PATH               TYPE        STRING
+* | [--->] IM_MOVE_PATH                   TYPE        STRING
+* | [--->] IM_ORIGINAL_PATH_LOCAL         TYPE        CHAR1 (default ='D')
+* | [--->] IM_MOVE_PATH_LOCAL             TYPE        CHAR1 (default ='D')
+* | [--->] IM_DELETE_ORIGINAL             TYPE        CHAR1 (default ='X')
+* | [EXC!] CAN_NOT_WRITE_MOVE_FILE
+* | [EXC!] CAN_NOT_READ_ORIFINAL_FILE
+* | [EXC!] CAN_NOT_DELETE_ORIGINAL_FILE
+* +--------------------------------------------------------------------------------------</SIGNATURE>
+  METHOD move_file.
+
+    DATA: va_data           TYPE xstring
+          .
+
+*Get data from original file
+    ZCL_TOOLS=>read_file_in_xstring(
+      EXPORTING
+        im_file_path = im_original_path
+        im_local = im_original_path_local
+      RECEIVING
+        rt_xstring = va_data
+      EXCEPTIONS
+        can_not_read_file = 1
+    ).
+    IF sy-subrc = 1 OR va_data IS INITIAL.
+      RAISE can_not_read_orifinal_file.
+    ENDIF.
+
+*Write data to move file
+    ZCL_TOOLS=>write_file_from_xstring(
+     EXPORTING
+     im_file_path = im_move_path
+     im_xstring = va_data
+     im_local = im_move_path_local
+     EXCEPTIONS
+       can_not_write_file = 1
+     ).
+
+    IF sy-subrc = 1.
+      RAISE can_not_write_move_file.
+    ENDIF.
+
+
+    DATA(lv_local) = ZCL_TOOLS=>get_path_location( im_original_path ).
+
+    IF im_delete_original = TRUE.
+      IF lv_local = 'L'.
+        CALL FUNCTION 'GUI_DELETE_FILE'
+          EXPORTING
+            file_name = CONV localfile( im_original_path )
+          EXCEPTIONS
+            failed    = 1
+            OTHERS    = 2.
+        IF sy-subrc <> 0.
+          RAISE can_not_delete_original_file.
+        ENDIF.
+      ELSEIF lv_local = 'S'.
+        DELETE DATASET im_original_path.
+        IF sy-subrc <> 0.
+          RAISE can_not_delete_original_file.
+        ENDIF.
+      ELSE.
+        RAISE can_not_delete_original_file.
+      ENDIF.
+    ENDIF.
+
+  ENDMETHOD.
+
+
+* <SIGNATURE>---------------------------------------------------------------------------------------+
+* | Static Public Method ZCL_TOOLS=>MOVE_FILE_2
+* +-------------------------------------------------------------------------------------------------+
+* | [--->] IM_ORIGINAL_PATH               TYPE        STRING
+* | [--->] IM_MOVE_PATH                   TYPE        STRING
+* | [--->] IM_ORIGINAL_PATH_LOCAL         TYPE        CHAR1 (default ='D')
+* | [--->] IM_MOVE_PATH_LOCAL             TYPE        CHAR1 (default ='D')
+* | [--->] IM_DELETE_ORIGINAL             TYPE        CHAR1 (default ='X')
+* | [EXC!] CAN_NOT_WRITE_MOVE_FILE
+* | [EXC!] CAN_NOT_READ_ORIFINAL_FILE
+* | [EXC!] CAN_NOT_DELETE_ORIGINAL_FILE
+* +--------------------------------------------------------------------------------------</SIGNATURE>
+  METHOD MOVE_FILE_2.
+
+    DATA: va_data           TYPE xstring.
+    DATA : lt_data       TYPE STANDARD TABLE OF string.
+
+*Get data from original file
+refresh lt_data[].
+CALL METHOD ZCL_TOOLS=>read_file_in_table
+  EXPORTING
+*    im_instructions_table =
+    im_file_path          = im_original_path
+*    im_local              = im_original_path_local
+  changing
+    ch_table              = lt_data
+  EXCEPTIONS
+    wrong_instractions    = 1
+    wrong_field_name      = 2
+    can_not_read_file     = 3
+    others                = 4
+        .
+    IF sy-subrc = 1 OR lt_data[] IS INITIAL.
+      RAISE can_not_read_orifinal_file.
+    ENDIF.
+
+*Write data to move file
+
+CALL METHOD ZCL_TOOLS=>write_file
+  EXPORTING
+    im_file_path       = im_move_path
+*    im_local           = im_move_path_local
+    im_table           = lt_data
+  EXCEPTIONS
+    can_not_write_file = 1
+    others             = 2
+       .
+    IF sy-subrc = 1.
+      RAISE can_not_write_move_file.
+    ENDIF.
+
+
+    DATA(lv_local) = ZCL_TOOLS=>get_path_location( im_original_path ).
+
+    IF im_delete_original = TRUE.
+      IF lv_local = 'L'.
+        CALL FUNCTION 'GUI_DELETE_FILE'
+          EXPORTING
+            file_name = CONV localfile( im_original_path )
+          EXCEPTIONS
+            failed    = 1
+            OTHERS    = 2.
+        IF sy-subrc <> 0.
+          RAISE can_not_delete_original_file.
+        ENDIF.
+      ELSEIF lv_local = 'S'.
+        DELETE DATASET im_original_path.
+        IF sy-subrc <> 0.
+          RAISE can_not_delete_original_file.
+        ENDIF.
+      ELSE.
+        RAISE can_not_delete_original_file.
+      ENDIF.
+    ENDIF.
+
+  ENDMETHOD.
+
+
+* <SIGNATURE>---------------------------------------------------------------------------------------+
+* | Static Public Method ZCL_TOOLS=>POPUP_TO_SELECT
+* +-------------------------------------------------------------------------------------------------+
+* | [--->] IM_ITEMS                       TYPE        TY_T_DATA
+* | [<-()] RT_SELECTION                   TYPE        I
+* +--------------------------------------------------------------------------------------</SIGNATURE>
+  METHOD popup_to_select.
+
+    TYPES : BEGIN OF ty_items,
+              item TYPE string,
+            END OF ty_items.
+
+    DATA : ls_selected TYPE slis_selfield,
+           lt_items    TYPE STANDARD TABLE OF ty_items,
+           ls_items    TYPE ty_items,
+           lt_fieldcat TYPE slis_t_fieldcat_alv.
+
+    IF im_items IS INITIAL.
+      rt_selection = 0.
+      EXIT.
+    ENDIF.
+
+    LOOP AT im_items INTO DATA(ls_item).
+      APPEND VALUE ty_items( item = ls_item ) TO lt_items.
+    ENDLOOP.
+    APPEND VALUE slis_fieldcat_alv( fieldname = 'ITEM' tabname = 'LT_ITEMS' outputlen = 60 seltext_m = 'Item' seltext_l = 'Item' ) TO lt_fieldcat.
+    rt_selection = 0.
+
+
+    CALL FUNCTION 'REUSE_ALV_POPUP_TO_SELECT'
+      EXPORTING
+        i_selection        = 'X'
+        i_zebra            = 'X'
+        i_tabname          = 'LT_ITEMS'
+        i_structure_name   = 'LS_ITEMS'
+        i_callback_program = sy-repid
+        it_fieldcat        = lt_fieldcat
+      IMPORTING
+        es_selfield        = ls_selected
+      TABLES
+        t_outtab           = lt_items
+      EXCEPTIONS
+        program_error      = 1
+        OTHERS             = 2.
+
+    IF ls_selected-tabindex IS NOT INITIAL.
+      rt_selection = ls_selected-tabindex.
+    ENDIF.
+
+  ENDMETHOD.
+
+
+* <SIGNATURE>---------------------------------------------------------------------------------------+
+* | Static Public Method ZCL_TOOLS=>READ_FILE_IN_TABLE
+* +-------------------------------------------------------------------------------------------------+
+* | [--->] IM_INSTRUCTIONS_TABLE          TYPE        TY_T_READ_FILE_INSTRUCTIONS(optional)
+* | [--->] IM_FILE_PATH                   TYPE        STRING
+* | [--->] IM_LOCAL                       TYPE        CHAR1 (default ='D')
+* | [<-->] CH_TABLE                       TYPE        TABLE
+* | [EXC!] WRONG_INSTRACTIONS
+* | [EXC!] WRONG_FIELD_NAME
+* | [EXC!] CAN_NOT_READ_FILE
+* +--------------------------------------------------------------------------------------</SIGNATURE>
+  METHOD read_file_in_table.
+    DATA : lt_data       TYPE STANDARD TABLE OF string,
+           ls_data       TYPE string,
+           lo_table_line TYPE REF TO data,
+           lv_local      TYPE char1.
+
+    IF im_local = 'D'.
+      DATA(lv_location) = ZCL_TOOLS=>get_path_location( im_file_path ).
+      IF lv_location = 'S'. "Server
+        lv_local = false.
+      ELSEIF lv_location = 'L'. "Local PC
+        lv_local = true.
+      ENDIF.
+    ELSE.
+      lv_local = im_local.
+    ENDIF.
+
+*Gather data from file in lt_data
+    IF lv_local = true.
+
+      CALL FUNCTION 'GUI_UPLOAD'
+        EXPORTING
+          filename                = im_file_path
+          filetype                = 'ASC'
+        TABLES
+          data_tab                = lt_data
+        EXCEPTIONS
+          file_open_error         = 1
+          file_read_error         = 2
+          no_batch                = 3
+          gui_refuse_filetransfer = 4
+          invalid_type            = 5
+          no_authority            = 6
+          unknown_error           = 7
+          bad_data_format         = 8
+          header_not_allowed      = 9
+          separator_not_allowed   = 10
+          header_too_long         = 11
+          unknown_dp_error        = 12
+          access_denied           = 13
+          dp_out_of_memory        = 14
+          disk_full               = 15
+          dp_timeout              = 16
+          OTHERS                  = 17.
+      IF sy-subrc <> 0.
+        REFRESH : ch_table, lt_data. "error, no data to read
+      ENDIF.
+    ELSE.
+
+      TRY.
+          OPEN DATASET im_file_path FOR INPUT IN TEXT MODE ENCODING DEFAULT.
+        CATCH cx_root.
+          RAISE can_not_read_file.
+      ENDTRY.
+      IF sy-subrc = 0.
+        DO.
+          TRY.
+              READ DATASET im_file_path INTO ls_data.
+              IF sy-subrc = 0.
+                REPLACE ALL OCCURRENCES OF cl_abap_char_utilities=>cr_lf(1) IN ls_data WITH space.
+                "Append string to final data :
+                APPEND ls_data TO lt_data.
+              ELSE.
+                EXIT.
+              ENDIF.
+            CATCH cx_root.
+              EXIT.
+          ENDTRY.
+        ENDDO.
+        CLOSE DATASET im_file_path.
+      ELSE.
+        REFRESH : ch_table, lt_data. "error, no data to read
+      ENDIF.
+    ENDIF.
+
+    IF lt_data IS INITIAL.
+      RAISE can_not_read_file.
+    ENDIF.
+
+    IF im_instructions_table IS INITIAL.
+      ch_table = lt_data.
+    ENDIF.
+
+    "Get data in ch_table based on instractions given :
+    CREATE DATA lo_table_line LIKE LINE OF ch_table.
+    ASSIGN lo_table_line->* TO FIELD-SYMBOL(<fs_table_line>).
+    ASSIGN ch_table TO FIELD-SYMBOL(<fs_table>).
+    LOOP AT lt_data INTO ls_data.
+      LOOP AT im_instructions_table INTO DATA(ls_instructions_table). "Get all table columns
+        DATA(lv_field) = ls_instructions_table-field_name.
+        TRANSLATE lv_field TO UPPER CASE.
+        ASSIGN COMPONENT lv_field OF STRUCTURE <fs_table_line> TO FIELD-SYMBOL(<fs_field>).
+        IF sy-subrc <> 0.
+          RAISE wrong_field_name.
+        ENDIF.
+        DATA(lv_read_from) = ls_instructions_table-read_from - 1.
+        IF lv_read_from < 0.
+          RAISE wrong_instractions.
+        ENDIF.
+        IF lv_read_from + ls_instructions_table-length > strlen( ls_data ).
+          CLEAR <fs_field>.
+        ELSE.
+          <fs_field> = ls_data+lv_read_from(ls_instructions_table-length).
+        ENDIF.
+      ENDLOOP.
+      APPEND <fs_table_line> TO <fs_table>. "Add a line to the table
+      CLEAR <fs_table_line>.
+    ENDLOOP.
+
+  ENDMETHOD.
+
+
+* <SIGNATURE>---------------------------------------------------------------------------------------+
+* | Static Public Method ZCL_TOOLS=>READ_FILE_IN_XSTRING
+* +-------------------------------------------------------------------------------------------------+
+* | [--->] IM_FILE_PATH                   TYPE        STRING
+* | [--->] IM_LOCAL                       TYPE        CHAR1 (default ='D')
+* | [<-()] RT_XSTRING                     TYPE        XSTRING
+* | [EXC!] CAN_NOT_READ_FILE
+* +--------------------------------------------------------------------------------------</SIGNATURE>
+  METHOD read_file_in_xstring.
+
+    DATA : lv_local TYPE char1,
+           ls_data  TYPE x,
+           lt_data  TYPE STANDARD TABLE OF x.
+
+    "Gather data :
+    IF im_local = 'D'.
+      lv_local = ZCL_TOOLS=>get_path_location( im_file_path ).
+      IF lv_local = 'L'.
+        lv_local = true.
+      ELSEIF lv_local = 'S'.
+        lv_local = false.
+      ENDIF.
+    ELSE.
+      lv_local = im_local.
+    ENDIF.
+    IF lv_local = true.
+
+      CALL FUNCTION 'GUI_UPLOAD'
+        EXPORTING
+          filename                = im_file_path
+          filetype                = 'BIN'
+*          codepage                = 'UTF-8'
+        TABLES
+          data_tab                = lt_data
+        EXCEPTIONS
+          file_open_error         = 1
+          file_read_error         = 2
+          no_batch                = 3
+          gui_refuse_filetransfer = 4
+          invalid_type            = 5
+          no_authority            = 6
+          unknown_error           = 7
+          bad_data_format         = 8
+          header_not_allowed      = 9
+          separator_not_allowed   = 10
+          header_too_long         = 11
+          unknown_dp_error        = 12
+          access_denied           = 13
+          dp_out_of_memory        = 14
+          disk_full               = 15
+          dp_timeout              = 16
+          OTHERS                  = 17.
+      IF sy-subrc <> 0.
+        REFRESH : lt_data. "error, no data to read
+      ENDIF.
+    ELSE.
+      TRY.
+          OPEN DATASET im_file_path FOR INPUT IN BINARY MODE.
+        CATCH cx_root.
+          RAISE can_not_read_file.
+      ENDTRY.
+      IF sy-subrc = 0.
+        DO.
+          TRY.
+              READ DATASET im_file_path INTO ls_data.
+            CATCH cx_root.
+              EXIT.
+          ENDTRY.
+          IF sy-subrc = 0.
+            APPEND ls_data TO lt_data.
+          ELSE.
+            EXIT.
+          ENDIF.
+        ENDDO.
+        CLOSE DATASET im_file_path.
+      ELSE.
+        REFRESH : lt_data. "error, no data to read
+      ENDIF.
+    ENDIF.
+
+    "Check if data gathered :
+    IF lt_data IS INITIAL.
+      RAISE can_not_read_file.
+    ENDIF.
+
+    "Convert to xstring and return :
+    LOOP AT lt_data INTO ls_data.
+      CONCATENATE rt_xstring ls_data INTO rt_xstring IN BYTE MODE.
+    ENDLOOP.
+
+  ENDMETHOD.
+
+
+* <SIGNATURE>---------------------------------------------------------------------------------------+
+* | Static Public Method ZCL_TOOLS=>SELECT_FILE_FROM_PATH
+* +-------------------------------------------------------------------------------------------------+
+* | [--->] IM_PATH                        TYPE        STRING
+* | [--->] IM_LOCAL                       TYPE        CHAR1 (default ='D')
+* | [--->] IM_PATTERN                     TYPE        STRING (default ='*')
+* | [<-()] RT_PATH                        TYPE        STRING
+* +--------------------------------------------------------------------------------------</SIGNATURE>
+  METHOD select_file_from_path.
+    CLEAR rt_path.
+    ZCL_TOOLS=>get_file_list_of_folder(
+      EXPORTING
+        im_path             = im_path
+        im_local            = im_local
+      RECEIVING
+        rt_filelist         = DATA(lt_paths)
+      EXCEPTIONS
+        can_not_read_folder = 1
+        OTHERS              = 2
+    ).
+    IF sy-subrc = 0.
+      DATA(lt_files) = lt_paths.
+      LOOP AT lt_files ASSIGNING FIELD-SYMBOL(<fs_file>).
+        DATA(lv_index) = sy-tabix.
+        <fs_file> = ZCL_TOOLS=>get_file_name_from_path( <fs_file> ).
+        IF NOT <fs_file> CP im_pattern.
+          TRY.
+              CLEAR lt_paths[ lv_index ].
+            CATCH cx_root.
+          ENDTRY.
+          CLEAR <fs_file>.
+        ENDIF.
+      ENDLOOP.
+      DELETE lt_files WHERE table_line IS INITIAL.
+      DELETE lt_paths WHERE table_line IS INITIAL.
+      DATA(lv_selection) = ZCL_TOOLS=>popup_to_select( lt_files ).
+      IF lv_selection > 0.
+        rt_path = lt_paths[ lv_selection ].
+      ENDIF.
+    ENDIF.
+  ENDMETHOD.
+
+
+* <SIGNATURE>---------------------------------------------------------------------------------------+
+* | Static Public Method ZCL_TOOLS=>SHOW_FILE_SELECTION
+* +-------------------------------------------------------------------------------------------------+
+* | [--->] IM_LOCAL                       TYPE        CHAR1
+* | [--->] IM_FOLDER_DIALOG               TYPE        CHAR1 (default ='X')
+* | [<-()] RT_FILE                        TYPE        STRING
+* +--------------------------------------------------------------------------------------</SIGNATURE>
+  METHOD show_file_selection.
+    IF im_local = TRUE. "Local PC
+      IF im_folder_dialog = TRUE.
+        cl_gui_frontend_services=>directory_browse(
+          CHANGING
+            selected_folder      = rt_file
+          EXCEPTIONS
+            cntl_error           = 1
+            error_no_gui         = 2
+            not_supported_by_gui = 3
+            OTHERS               = 4
+          ).
+      ELSE.
+        DATA: lt_files TYPE filetable,
+              lv_rc    TYPE i
+              .
+
+        CALL METHOD cl_gui_frontend_services=>file_open_dialog
+          CHANGING
+            file_table              = lt_files
+            rc                      = lv_rc
+          EXCEPTIONS
+            file_open_dialog_failed = 1
+            cntl_error              = 2
+            error_no_gui            = 3
+            not_supported_by_gui    = 4
+            OTHERS                  = 5.
+        IF lines( lt_files ) > 0.
+          rt_file = lt_files[ 1 ]-filename.
+        ENDIF.
+      ENDIF.
+    ELSE.                        "Server
+      CALL FUNCTION '/SAPDMC/LSM_F4_SERVER_FILE'
+        IMPORTING
+          serverfile       = rt_file
+        EXCEPTIONS
+          canceled_by_user = 1
+          OTHERS           = 2.
+      IF sy-subrc <> 0.
+        CLEAR rt_file.
+      ENDIF.
+    ENDIF.
+  ENDMETHOD.
+
+
+* <SIGNATURE>---------------------------------------------------------------------------------------+
+* | Static Public Method ZCL_TOOLS=>WRITE_FILE
+* +-------------------------------------------------------------------------------------------------+
+* | [--->] IM_FILE_PATH                   TYPE        STRING
+* | [--->] IM_LOCAL                       TYPE        CHAR1 (default ='D')
+* | [--->] IM_TABLE                       TYPE        TY_T_DATA
+* | [EXC!] CAN_NOT_WRITE_FILE
+* +--------------------------------------------------------------------------------------</SIGNATURE>
+  METHOD write_file.
+    DATA lv_local TYPE char1.
+
+    IF im_local = 'D'.
+      DATA(lv_location) = ZCL_TOOLS=>get_path_location( im_file_path ).
+      IF lv_location = 'S'. "Server
+        CLEAR lv_local.
+      ELSEIF lv_location = 'L'. "Local PC
+        lv_local = 'X'.
+      ENDIF.
+    ELSE.
+      lv_local = im_local.
+    ENDIF.
+
+    IF lv_local IS INITIAL. "SERVER file
+      TRY.
+          OPEN DATASET im_file_path FOR OUTPUT IN TEXT MODE ENCODING DEFAULT.
+          IF sy-subrc = 0.
+            LOOP AT im_table INTO DATA(ls_data).
+              IF ls_data IS INITIAL.
+                CONTINUE.
+              ENDIF.
+              TRANSFER ls_data TO im_file_path.
+            ENDLOOP.
+            CLOSE DATASET im_file_path.
+          ELSE.
+            RAISE can_not_write_file.
+          ENDIF.
+        CATCH cx_root.
+          RAISE can_not_write_file.
+      ENDTRY.
+    ELSE.
+      CALL FUNCTION 'GUI_DOWNLOAD'
+        EXPORTING
+          filename                = im_file_path
+          filetype                = 'ASC'
+        TABLES
+          data_tab                = im_table
+        EXCEPTIONS
+          file_write_error        = 1
+          no_batch                = 2
+          gui_refuse_filetransfer = 3
+          invalid_type            = 4
+          no_authority            = 5
+          unknown_error           = 6
+          header_not_allowed      = 7
+          separator_not_allowed   = 8
+          filesize_not_allowed    = 9
+          header_too_long         = 10
+          dp_error_create         = 11
+          dp_error_send           = 12
+          dp_error_write          = 13
+          unknown_dp_error        = 14
+          access_denied           = 15
+          dp_out_of_memory        = 16
+          disk_full               = 17
+          dp_timeout              = 18
+          file_not_found          = 19
+          dataprovider_exception  = 20
+          control_flush_error     = 21
+          OTHERS                  = 22.
+      IF sy-subrc <> 0.
+        RAISE can_not_write_file.
+      ENDIF.
+
+
+    ENDIF.
+
+
+  ENDMETHOD.
+
+
+* <SIGNATURE>---------------------------------------------------------------------------------------+
+* | Static Public Method ZCL_TOOLS=>WRITE_FILE_FROM_XSTRING
+* +-------------------------------------------------------------------------------------------------+
+* | [--->] IM_FILE_PATH                   TYPE        STRING
+* | [--->] IM_LOCAL                       TYPE        CHAR1 (default ='D')
+* | [--->] IM_XSTRING                     TYPE        XSTRING
+* | [EXC!] CAN_NOT_WRITE_FILE
+* +--------------------------------------------------------------------------------------</SIGNATURE>
+  METHOD write_file_from_xstring.
+    DATA lv_local TYPE char1.
+
+    IF im_local = 'D'.
+      DATA(lv_location) = ZCL_TOOLS=>get_path_location( im_file_path ).
+      IF lv_location = 'S'. "Server
+        lv_local = FALSE.
+      ELSEIF lv_location = 'L'. "Local PC
+        lv_local = TRUE.
+      ENDIF.
+    ELSE.
+      lv_local = im_local.
+    ENDIF.
+
+    IF lv_local = TRUE. "LOCAL file
+      DATA(lt_data) = ZCL_TOOLS=>convert_xstring_to_binary( im_xstring = im_xstring ).
+      CALL FUNCTION 'GUI_DOWNLOAD'
+        EXPORTING
+          filename                = im_file_path
+          filetype                = 'BIN'
+        TABLES
+          data_tab                = lt_data
+        EXCEPTIONS
+          file_write_error        = 1
+          no_batch                = 2
+          gui_refuse_filetransfer = 3
+          invalid_type            = 4
+          no_authority            = 5
+          unknown_error           = 6
+          header_not_allowed      = 7
+          separator_not_allowed   = 8
+          filesize_not_allowed    = 9
+          header_too_long         = 10
+          dp_error_create         = 11
+          dp_error_send           = 12
+          dp_error_write          = 13
+          unknown_dp_error        = 14
+          access_denied           = 15
+          dp_out_of_memory        = 16
+          disk_full               = 17
+          dp_timeout              = 18
+          file_not_found          = 19
+          dataprovider_exception  = 20
+          control_flush_error     = 21
+          OTHERS                  = 22.
+      IF sy-subrc <> 0.
+        RAISE can_not_write_file.
+      ENDIF.
+    ELSE.
+      TRY.
+          OPEN DATASET im_file_path FOR OUTPUT IN BINARY MODE.
+          IF sy-subrc = 0.
+            TRANSFER im_xstring TO im_file_path.
+            CLOSE DATASET im_file_path.
+          ELSE.
+            RAISE can_not_write_file.
+          ENDIF.
+        CATCH cx_root.
+          RAISE can_not_write_file.
+      ENDTRY.
+    ENDIF.
+  ENDMETHOD.
+ENDCLASS.

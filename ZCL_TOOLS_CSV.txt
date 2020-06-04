@@ -1,0 +1,330 @@
+class ZCL_TOOLS_CSV definition
+  public
+  final
+  create public .
+
+public section.
+
+  types:
+    BEGIN OF ty_create_instructions,
+        table         TYPE REF TO data, "The table from which we read the data
+        column_header TYPE string,      "The field of the table from which we read the data
+        column_name   TYPE string,      "The colume header to be added in the CSV
+        fixed_value   TYPE xflag,       "Whether the value should be the same and = column_name for all the raw of the column
+      END OF ty_create_instructions .
+  types:
+    BEGIN OF ty_read_instructions,
+        table TYPE REF TO data, "the table where we put the data
+        field_name TYPE string, "the field in the table where we put the data
+        column_num TYPE i,      "The columns number (starting counting from 1) of the CSV we want to read
+      END OF ty_read_instructions .
+  types:
+    ty_t_create_instructions TYPE STANDARD TABLE OF ty_create_instructions WITH KEY table column_header column_name .
+  types:
+    ty_t_read_instructions   TYPE STANDARD TABLE OF ty_read_instructions WITH KEY table field_name column_num .
+  types:
+    ty_csv                   TYPE TABLE OF string WITH DEFAULT KEY .
+
+  data LV_SEPERATOR type CHAR1 value ';' ##NO_TEXT.
+
+  methods CREATE_ADD_INSTRUCTION
+    importing
+      !IM_COLUMN_NAME type STRING
+      !IM_COLUMN_HEADER type STRING optional
+      !IM_FIXED_VALUE type XFLAG default ' '
+    changing
+      !CH_TABLE type DATA .
+  methods CREATE_ADD_INSTRUCTION_TABLE
+    importing
+      !IM_LINES type TY_T_CREATE_INSTRUCTIONS .
+  methods CREATE_CLEAR_INSTRUCTIONS .
+  methods CREATE_CSV
+    returning
+      value(RT_CSV) type TY_CSV .
+  methods READ_ADD_INSTRUCTION
+    importing
+      !IM_FIELD_NAME type STRING
+      !IM_COLUMN_NUM type I
+    changing
+      !CH_TABLE type DATA .
+  methods READ_ADD_INSTRUCTION_TABLE
+    importing
+      !IM_LINES type TY_T_READ_INSTRUCTIONS .
+  methods READ_CLEAR_INSTRUCTIONS .
+  methods READ_CSV
+    importing
+      !IM_PATH type STRING
+      !IM_SKIP_HEADER type CHAR1 optional
+    changing
+      !CH_TABLE type TY_CSV optional
+    exceptions
+      CAN_NOT_READ_FILE .
+  methods SET_SEPERATOR
+    importing
+      !IM_SEPERATOR type CHAR1 .
+  methods READ_CSV_FROM_TABLE
+    importing
+      !IM_SKIP_HEADER type FLAG optional
+      !IM_CSV_TABLE type TY_CSV .
+protected section.
+private section.
+
+  data LT_CREATE_INSTRUCTIONS type TY_T_CREATE_INSTRUCTIONS .
+  data LT_CSV type TY_CSV .
+  data LT_READ_INSTRUCTIONS type TY_T_READ_INSTRUCTIONS .
+ENDCLASS.
+
+
+
+CLASS ZCL_TOOLS_CSV IMPLEMENTATION.
+
+
+* <SIGNATURE>---------------------------------------------------------------------------------------+
+* | Instance Public Method ZCL_TOOLS_CSV->CREATE_ADD_INSTRUCTION
+* +-------------------------------------------------------------------------------------------------+
+* | [--->] IM_COLUMN_NAME                 TYPE        STRING
+* | [--->] IM_COLUMN_HEADER               TYPE        STRING(optional)
+* | [--->] IM_FIXED_VALUE                 TYPE        XFLAG (default =' ')
+* | [<-->] CH_TABLE                       TYPE        DATA
+* +--------------------------------------------------------------------------------------</SIGNATURE>
+  METHOD create_add_instruction.
+    DATA(ls_instruction) = VALUE ty_create_instructions(
+      column_header = im_column_header
+      column_name = im_column_name
+      fixed_value = im_fixed_value
+    ).
+    GET REFERENCE OF ch_table INTO ls_instruction-table.
+    APPEND ls_instruction TO lt_create_instructions.
+    CLEAR lt_csv.
+  ENDMETHOD.
+
+
+* <SIGNATURE>---------------------------------------------------------------------------------------+
+* | Instance Public Method ZCL_TOOLS_CSV->CREATE_ADD_INSTRUCTION_TABLE
+* +-------------------------------------------------------------------------------------------------+
+* | [--->] IM_LINES                       TYPE        TY_T_CREATE_INSTRUCTIONS
+* +--------------------------------------------------------------------------------------</SIGNATURE>
+  METHOD create_add_instruction_table.
+    APPEND LINES OF im_lines TO lt_create_instructions.
+    CLEAR lt_csv.
+  ENDMETHOD.
+
+
+* <SIGNATURE>---------------------------------------------------------------------------------------+
+* | Instance Public Method ZCL_TOOLS_CSV->CREATE_CLEAR_INSTRUCTIONS
+* +-------------------------------------------------------------------------------------------------+
+* +--------------------------------------------------------------------------------------</SIGNATURE>
+  method CREATE_CLEAR_INSTRUCTIONS.
+    REFRESH lt_create_instructions.
+  endmethod.
+
+
+* <SIGNATURE>---------------------------------------------------------------------------------------+
+* | Instance Public Method ZCL_TOOLS_CSV->CREATE_CSV
+* +-------------------------------------------------------------------------------------------------+
+* | [<-()] RT_CSV                         TYPE        TY_CSV
+* +--------------------------------------------------------------------------------------</SIGNATURE>
+  METHOD create_csv.
+    IF lt_csv IS INITIAL. "If it hasn't been already created then create it else return the already created
+      FIELD-SYMBOLS : <fs_table> TYPE table,
+                      <fs_field> TYPE any
+                      .
+      DATA : row_index TYPE i,
+             lv_row    TYPE string,
+             lv_header TYPE i VALUE 0.
+             .
+
+      REFRESH lt_csv.
+      CLEAR lv_row.
+
+      LOOP AT lt_create_instructions INTO DATA(ls_instructions_head). "Create header
+        IF ls_instructions_head-column_header IS NOT INITIAL.
+          IF sy-tabix = 1.
+            lv_row = ls_instructions_head-column_header.
+          ELSE.
+            CONCATENATE lv_row ls_instructions_head-column_header INTO lv_row SEPARATED BY lv_seperator.
+          ENDIF.
+        ENDIF.
+      ENDLOOP.
+      IF lv_row IS NOT INITIAL.
+        APPEND lv_row TO lt_csv.
+        lv_header = 1.
+      ENDIF.
+
+      LOOP AT lt_create_instructions INTO DATA(ls_instructions). "Loop on columns
+        row_index = 1.
+
+        ASSIGN ls_instructions-table->* TO <fs_table>.
+        LOOP AT <fs_table> ASSIGNING FIELD-SYMBOL(<fs_struct>). "Loop on rows
+          CLEAR lv_row.
+          "Get data from table reference :
+          IF ls_instructions-fixed_value IS INITIAL.
+            UNASSIGN <fs_field>.
+            ASSIGN COMPONENT ls_instructions-column_name OF STRUCTURE <fs_struct> TO <fs_field>.
+            IF <fs_field> IS ASSIGNED.
+              lv_row = CONV string( <fs_field> ).
+            ENDIF.
+          ELSE.
+            lv_row = ls_instructions-column_name.
+          ENDIF.
+          "Update output table lt_csv :
+          IF row_index > lines( lt_csv ) - lv_header.
+            APPEND lv_row TO lt_csv.
+          ELSE.
+            DATA(lv_current_row) = lt_csv[ row_index + lv_header ].
+            IF lv_current_row IS INITIAL.
+              lv_current_row = lv_row.
+            ELSE.
+              CONCATENATE lv_current_row lv_row INTO lv_row SEPARATED BY lv_seperator.
+            ENDIF.
+            lt_csv[ row_index + lv_header ] = lv_row.
+            CLEAR lv_current_row.
+          ENDIF.
+          row_index = row_index + 1.
+        ENDLOOP.
+
+      ENDLOOP.
+    ENDIF.
+    rt_csv = lt_csv.
+  ENDMETHOD.
+
+
+* <SIGNATURE>---------------------------------------------------------------------------------------+
+* | Instance Public Method ZCL_TOOLS_CSV->READ_ADD_INSTRUCTION
+* +-------------------------------------------------------------------------------------------------+
+* | [--->] IM_FIELD_NAME                  TYPE        STRING
+* | [--->] IM_COLUMN_NUM                  TYPE        I
+* | [<-->] CH_TABLE                       TYPE        DATA
+* +--------------------------------------------------------------------------------------</SIGNATURE>
+  METHOD read_add_instruction.
+    DATA(ls_instruction) = VALUE ty_read_instructions(
+      field_name = im_field_name
+      column_num = im_column_num
+    ).
+    GET REFERENCE OF ch_table INTO ls_instruction-table.
+    APPEND ls_instruction TO lt_read_instructions.
+  ENDMETHOD.
+
+
+* <SIGNATURE>---------------------------------------------------------------------------------------+
+* | Instance Public Method ZCL_TOOLS_CSV->READ_ADD_INSTRUCTION_TABLE
+* +-------------------------------------------------------------------------------------------------+
+* | [--->] IM_LINES                       TYPE        TY_T_READ_INSTRUCTIONS
+* +--------------------------------------------------------------------------------------</SIGNATURE>
+  METHOD read_add_instruction_table.
+    APPEND LINES OF im_lines TO lt_read_instructions.
+  ENDMETHOD.
+
+
+* <SIGNATURE>---------------------------------------------------------------------------------------+
+* | Instance Public Method ZCL_TOOLS_CSV->READ_CLEAR_INSTRUCTIONS
+* +-------------------------------------------------------------------------------------------------+
+* +--------------------------------------------------------------------------------------</SIGNATURE>
+  METHOD read_clear_instructions.
+    REFRESH lt_read_instructions.
+  ENDMETHOD.
+
+
+* <SIGNATURE>---------------------------------------------------------------------------------------+
+* | Instance Public Method ZCL_TOOLS_CSV->READ_CSV
+* +-------------------------------------------------------------------------------------------------+
+* | [--->] IM_PATH                        TYPE        STRING
+* | [--->] IM_SKIP_HEADER                 TYPE        CHAR1(optional)
+* | [<-->] CH_TABLE                       TYPE        TY_CSV(optional)
+* | [EXC!] CAN_NOT_READ_FILE
+* +--------------------------------------------------------------------------------------</SIGNATURE>
+  METHOD read_csv.
+    DATA : lt_data   TYPE STANDARD TABLE OF string, "Used to get the CSV data
+           ls_table  TYPE REF TO data, "Used to store the table structure
+           lt_fields TYPE TABLE OF string "Used to store the fields of the CSV data
+           .
+    FIELD-SYMBOLS : <fs_table> TYPE table,
+                    <fs_field> TYPE any
+                    .
+
+    zcl_fi_tools=>read_file_in_table(
+      EXPORTING
+        im_file_path = im_path
+      CHANGING
+        ch_table = lt_data
+      EXCEPTIONS
+        can_not_read_file = 1
+        OTHERS = 2
+      ).
+    IF sy-subrc <> 0.
+      RAISE can_not_read_file.
+    ENDIF.
+
+    IF lt_read_instructions IS NOT INITIAL.
+      me->read_csv_from_table(
+        EXPORTING
+          im_skip_header =  im_skip_header         " Set 'X' to skip header
+          im_csv_table   =  lt_data                " Table of string with the CSV lines
+      ).
+    ELSE.
+      ch_table = lt_data.
+    ENDIF.
+  ENDMETHOD.
+
+
+* <SIGNATURE>---------------------------------------------------------------------------------------+
+* | Instance Public Method ZCL_TOOLS_CSV->READ_CSV_FROM_TABLE
+* +-------------------------------------------------------------------------------------------------+
+* | [--->] IM_SKIP_HEADER                 TYPE        FLAG(optional)
+* | [--->] IM_CSV_TABLE                   TYPE        TY_CSV
+* +--------------------------------------------------------------------------------------</SIGNATURE>
+  METHOD read_csv_from_table.
+    DATA : ls_table  TYPE REF TO data, "Used to store the table structure
+           lt_fields TYPE TABLE OF string "Used to store the fields of the CSV data
+           .
+    FIELD-SYMBOLS : <fs_table> TYPE table,
+                    <fs_field> TYPE any
+                    .
+
+    LOOP AT im_csv_table INTO DATA(ls_data).
+      IF im_skip_header = 'X' AND sy-tabix = 1.
+        CONTINUE.
+      ENDIF.
+
+      DATA(lv_line) = sy-tabix.
+      IF im_skip_header = 'X'.
+        lv_line = lv_line - 1.
+      ENDIF.
+
+      REFRESH lt_fields.
+      SPLIT ls_data AT lv_seperator INTO TABLE lt_fields.
+
+      LOOP AT lt_read_instructions INTO DATA(ls_read_instructions).
+        IF lines( lt_fields ) > 0 AND ls_read_instructions-column_num <= lines( lt_fields ).
+          "Prepare table reference for data input :
+          ASSIGN ls_read_instructions-table->* TO <fs_table>.
+          CREATE DATA ls_table LIKE LINE OF <fs_table>.
+          ASSIGN ls_table->* TO FIELD-SYMBOL(<fs_struct>).
+          ASSIGN COMPONENT ls_read_instructions-field_name OF STRUCTURE <fs_struct> TO <fs_field>.
+
+          "Get value to write :
+          <fs_field> = lt_fields[ ls_read_instructions-column_num ].
+
+          "Append data to table :
+          IF lines( <fs_table> ) = lv_line. "If entry already exists in table modify it
+            MODIFY <fs_table> FROM <fs_struct> INDEX lv_line TRANSPORTING (ls_read_instructions-field_name).
+          ELSE. "if entry does not exist create it
+            APPEND <fs_struct> TO <fs_table>.
+          ENDIF.
+          UNASSIGN: <fs_table>, <fs_field>.
+          CLEAR ls_table.
+        ENDIF.
+      ENDLOOP.
+    ENDLOOP.
+  ENDMETHOD.
+
+
+* <SIGNATURE>---------------------------------------------------------------------------------------+
+* | Instance Public Method ZCL_TOOLS_CSV->SET_SEPERATOR
+* +-------------------------------------------------------------------------------------------------+
+* | [--->] IM_SEPERATOR                   TYPE        CHAR1
+* +--------------------------------------------------------------------------------------</SIGNATURE>
+  METHOD set_seperator.
+    lv_seperator = im_seperator.
+  ENDMETHOD.
+ENDCLASS.

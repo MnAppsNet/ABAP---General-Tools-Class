@@ -1,0 +1,66 @@
+class ZCL_TOOLS_LOG definition
+  public
+  final
+  create public .
+
+public section.
+
+  types:
+    BEGIN OF ty_log,
+        object TYPE string,
+        action TYPE string,
+        param1 TYPE string,
+        param2 TYPE string,
+        param3 TYPE string,
+      END OF ty_log .
+  types:
+    ty_t_log TYPE STANDARD TABLE OF ty_log WITH DEFAULT KEY .
+
+  methods ADD_LOG
+    importing
+      !IM_OBJECT type STRING
+      !IM_ACTION type STRING optional
+      !IM_PARAM1 type STRING optional
+      !IM_PARAM2 type STRING optional
+      !IM_PARAM3 type STRING optional .
+  methods GET_LOG_TABLE
+    returning
+      value(RT_LOG_TABLE) type TY_T_LOG .
+protected section.
+private section.
+
+  data LT_LOGS type TY_T_LOG .
+ENDCLASS.
+
+
+
+CLASS ZCL_TOOLS_LOG IMPLEMENTATION.
+
+
+* <SIGNATURE>---------------------------------------------------------------------------------------+
+* | Instance Public Method ZCL_TOOLS_LOG->ADD_LOG
+* +-------------------------------------------------------------------------------------------------+
+* | [--->] IM_OBJECT                      TYPE        STRING
+* | [--->] IM_ACTION                      TYPE        STRING(optional)
+* | [--->] IM_PARAM1                      TYPE        STRING(optional)
+* | [--->] IM_PARAM2                      TYPE        STRING(optional)
+* | [--->] IM_PARAM3                      TYPE        STRING(optional)
+* +--------------------------------------------------------------------------------------</SIGNATURE>
+  method ADD_LOG.
+
+    lt_logs = VALUE #( BASE lt_logs
+                       ( object = im_object   action = im_action   param1 = im_param1   param2 = im_param2   param3 = im_param3 )
+                     ).
+
+  endmethod.
+
+
+* <SIGNATURE>---------------------------------------------------------------------------------------+
+* | Instance Public Method ZCL_TOOLS_LOG->GET_LOG_TABLE
+* +-------------------------------------------------------------------------------------------------+
+* | [<-()] RT_LOG_TABLE                   TYPE        TY_T_LOG
+* +--------------------------------------------------------------------------------------</SIGNATURE>
+  method GET_LOG_TABLE.
+    rt_log_table = lt_logs.
+  endmethod.
+ENDCLASS.
